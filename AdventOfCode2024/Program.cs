@@ -6,6 +6,8 @@ namespace AdventOfCode2024;
 
 public class Program
 {
+    private const string Year = "2024";
+
     private static async Task Main(string[] args)
     {
         try
@@ -16,7 +18,7 @@ public class Program
 
             var configuration = builder.Build();
             var cookie = configuration["AoC:SessionCookie"]!;
-            var aocClient = new AocClient(cookie);
+            var aocClient = new AocClient(cookie, Year);
 
             var solversClasses = Assembly.GetExecutingAssembly()
                 .GetTypes()
@@ -40,7 +42,10 @@ public class Program
             }
 
             var day = int.Parse(latestSolver.Name.ToLowerInvariant().Replace("day", ""));
-            var inputPath = $"Inputs/day{day}.txt";
+            var inputDirectory = "Inputs";
+            var inputPath = $"{inputDirectory}/day{day}.txt";
+
+            Directory.CreateDirectory(inputDirectory);
 
             if (!File.Exists(inputPath))
             {

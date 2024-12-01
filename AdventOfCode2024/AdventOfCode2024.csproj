@@ -21,8 +21,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Puzzles\" />
-  </ItemGroup>
-
 </Project>
