@@ -3,17 +3,20 @@
 public class AocClient
 {
     private HttpClient client;
-    private string cookie;
+    private readonly string cookie;
+    private readonly string year;
 
-    public AocClient(string sessionCookie)
+    public AocClient(string sessionCookie, string year)
     {
         client = new HttpClient();
+
+        this.year = year;
         cookie = $"session={sessionCookie}";
     }
 
     public async Task<string> GetDayInputAsJsonAsync(int day)
     {
-        var url = $"https://adventofcode.com/2022/day/{day}/input";
+        var url = $"https://adventofcode.com/{year}/day/{day}/input";
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("Cookie", cookie);
@@ -30,7 +33,7 @@ public class AocClient
 
     public async Task<string> PostAnswerAsync(int day, string answer, int part)
     {
-        var url = $"https://adventofcode.com/2022/day/{day}/answer";
+        var url = $"https://adventofcode.com/{year}/day/{day}/answer";
 
         var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Headers.Add("Cookie", cookie);
