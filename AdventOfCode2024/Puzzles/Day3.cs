@@ -10,18 +10,36 @@ internal class Day3 : ISolver
 
         var wholeSum = 0L;
 
+        var isEnabled = true;
         while (stream.ReadLine() is string line)
         {
-            var isNumber = false;
-            
-
             for (int i = 0; i < line.Length - 4; i++)
             {
                 var j = i;
                 int a = 0, b = 0;
 
+                if (line.Substring(j, 4) == "do()")
+                {
+                    isEnabled = true;
+                    i += 3;
+                    continue;
+                }
+
+                if (j + 6 < line.Length && line.Substring(j, 7) == "don't()")
+                {
+                    isEnabled = false;
+                    i += 6;
+                    continue;
+                }
+
+                if (!isEnabled)
+                {
+                    continue;
+                }
+                
                 if (line.Substring(j, 4) == "mul(")
                 {
+                    
                     j += 4;
 
                     var c = 0;
