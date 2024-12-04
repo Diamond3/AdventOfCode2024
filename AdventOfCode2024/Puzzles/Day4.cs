@@ -24,26 +24,24 @@ internal class Day4 : ISolver
     private int CountMatches(List<char[]> map)
     {
         var c = 0;
-        var directions = new (int dirY, int dirX)[]
+        var directions = new (int aDir, int bDir)[]
         {
-            (0, 1),     // Right
-            (0, -1),    // Left
-            (1, 0),     // Down
-            (-1, 0),    // Up
-            
-            (1, 1),
-            (-1, -1),
-            (-1, 1),  
-            (1, -1)
+            (0, 0),     // 0 - normal, 1 - reversed
+            (0, 1),
+            (1, 0),
+            (1, 1)
         };
 
         for (int y = 0; y < map.Count; y++)
         {
             for (int x = 0; x < map[0].Length; x++)
             {
-                foreach (var dir in directions)
+                var a = GetStringFromDir(map, y, x, (1, 1));
+                var b = GetStringFromDir(map, y + 2, x, (-1, +1));
+
+                foreach (var (aDir, bDir) in directions)
                 {
-                    if (IsMatch(map, y, x, dir, "XMAS"))
+                    if (IsMatch(a, aDir) && IsMatch(b, bDir))
                     {
                         c++;
                     }
@@ -53,19 +51,42 @@ internal class Day4 : ISolver
         return c;
     }
 
-    private bool IsMatch(List<char[]> map, int y, int x, (int y, int x) dir, string word)
+    private bool IsMatch(string input, int dir)
     {
-        for (int i = 0; i < word.Length; i++)
+        var normal = "MAS";
+        var reversed = "SAM";
+
+        if (input.Length != 3)
+        {
+            return false;
+        }
+
+        if (dir == 0)
+        {
+            return normal == input;
+        }
+
+        return reversed == input;
+    }
+
+    private string GetStringFromDir(List<char[]> map, int y, int x, (int y, int x) dir)
+    {
+        var arr = new char[3];
+        for (int i = 0; i < 3; i++)
         {
             var newX = x + dir.x * i;
             var newY = y + dir.y * i;
 
-            if (newX < 0 || newX >= map[0].Length || newY < 0 || newY >= map.Count || map[newY][newX] != word[i])
+            if (newX < 0 || newX >= map[0].Length || newY < 0 || newY >= map.Count)
             {
-                return false;
+                return "";
+            }
+            else
+            {
+                arr[i] = map[newY][newX];
             }
         }
 
-        return true;
+        return new string(arr);
     }
 }
