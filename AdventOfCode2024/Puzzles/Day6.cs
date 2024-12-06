@@ -29,6 +29,24 @@ internal class Day6 : ISolver
             y++;
         }
 
+        var c = 0;
+        var possiblePositions = PossibleObstaclePositions(map, start, direction);
+        foreach (var pos in possiblePositions)
+        {
+            map[pos] = '#';
+            if (IsLoop(map, start, direction))
+            {
+                c++;
+            }
+            map[pos] = '.';
+        }
+
+        return c.ToString();
+    }
+
+    private List<(int y, int x)> PossibleObstaclePositions(Dictionary<(int y, int x), char> map, (int y, int x) start, (int y, int x) direction)
+    {
+        var possiblePos = new List<(int, int)>();
         var visited = new HashSet<(int, int)>() { start };
         var pos = start;
 
@@ -46,13 +64,46 @@ internal class Day6 : ISolver
                 direction = GetRotatedDirection(direction);
                 continue;
             }
+                        
+            if (visited.Add(newPos))
+            {
+                possiblePos.Add(newPos);
+            }
 
-            visited.Add(newPos);
             pos = newPos;
         }
-
-        return visited.Count.ToString();
+        return possiblePos;
     }
+
+    private bool IsLoop(Dictionary<(int y, int x), char> map, (int y, int x) start, (int y, int x) direction)
+    {
+        var visitedPosAndDir = new HashSet<((int, int) pos, (int, int) dir)>();
+        var pos = start;
+
+        while (true)
+        {
+            var newPos = (pos.y + direction.y, pos.x + direction.x);
+
+            if (!map.ContainsKey(newPos))
+            {
+                return false;
+            }
+
+            if (map[newPos] == '#')
+            {
+                if (!visitedPosAndDir.Add((newPos, direction)))
+                {
+                    return true;
+                }
+
+                direction = GetRotatedDirection(direction);
+                continue;
+            }
+
+            pos = newPos;
+        }
+    }
+
 
     private (int y, int x) GetRotatedDirection((int y, int x) direction)
     {
