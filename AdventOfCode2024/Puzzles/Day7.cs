@@ -35,6 +35,7 @@ internal class Day7 : ISolver
 
                 stack.Push((n + 1, sum + nums[n]));
                 stack.Push((n + 1, sum * nums[n]));
+                stack.Push((n + 1, long.Parse($"{sum}{nums[n]}")));
             }
         }
 
