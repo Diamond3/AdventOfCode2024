@@ -1,4 +1,5 @@
 ﻿using AdventOfCode2024.Utils;
+using System.Diagnostics;
 
 namespace AdventOfCode2024.Puzzles;
 
@@ -16,7 +17,6 @@ internal class Day7 : ISolver
             var nums = split.Skip(1).Select(int.Parse).ToArray();
 
             var stack = new Stack<(int n, long sum)>();
-
             stack.Push((1, nums[0]));
 
             while (stack.Count > 0)
@@ -35,10 +35,17 @@ internal class Day7 : ISolver
 
                 stack.Push((n + 1, sum + nums[n]));
                 stack.Push((n + 1, sum * nums[n]));
-                stack.Push((n + 1, long.Parse($"{sum}{nums[n]}")));
+                stack.Push((n + 1, MergeNumbers(sum, nums[n])));
             }
         }
 
         return sumOfResults.ToString();
+    }
+
+    private long MergeNumbers(long a, long b)
+    {
+        var numCount = (int)Math.Log10(b) + 1;
+        a *= (long)Math.Pow(10, numCount);
+        return a + b;
     }
 }
