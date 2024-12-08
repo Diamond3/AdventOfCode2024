@@ -34,9 +34,9 @@ internal class Day8 : ISolver
 
         foreach (var list in antennaPairs.Values)
         {
-            for (int i = 0; i < list.Count; i++)
+            for (int i = 0; i < list.Count - 1; i++)
             {
-                for (int j = i + 1; j <= list.Count - 1; j++)
+                for (int j = i + 1; j < list.Count; j++)
                 {
                     var dir = (y: list[i].y - list[j].y, x: list[i].x - list[j].x); // Dir from j to i
 
