@@ -39,22 +39,36 @@ internal class Day8 : ISolver
                 for (int j = i + 1; j <= list.Count - 1; j++)
                 {
                     var dir = (y: list[i].y - list[j].y, x: list[i].x - list[j].x); // Dir from j to i
-                    var antinode = (y: list[i].y + dir.y, x: list[i].x + dir.x);
 
-                    if (antinode.x >= 0 && antinode.x < mapWidth && antinode.y >= 0 && antinode.y < mapHeight)
+                    var antinode = (y: list[i].y + dir.y, x: list[i].x + dir.x);
+                    while (AddAntinode(mapWidth, mapHeight, antinodeSet, antinode))
                     {
-                        antinodeSet.Add(antinode);
+                        antinode = (y: antinode.y + dir.y, x: antinode.x + dir.x);
                     }
 
                     antinode = (y: list[j].y - dir.y, x: list[j].x - dir.x);
-                    if (antinode.x >= 0 && antinode.x < mapWidth && antinode.y >= 0 && antinode.y < mapHeight)
+                    while (AddAntinode(mapWidth, mapHeight, antinodeSet, antinode))
                     {
-                        antinodeSet.Add(antinode);
+                        antinode = (y: antinode.y - dir.y, x: antinode.x - dir.x);
                     }
+
+                    antinodeSet.Add(list[i]);
+                    antinodeSet.Add(list[j]);
                 }
             }
         }
 
         return antinodeSet.Count.ToString();
+    }
+
+    private bool AddAntinode(int mapWidth, int mapHeight, HashSet<(int, int)> antinodeSet, (int y, int x) antinode)
+    {
+        if (antinode.x >= 0 && antinode.x < mapWidth && antinode.y >= 0 && antinode.y < mapHeight)
+        {
+            antinodeSet.Add(antinode);
+            return true;
+        }
+
+        return false;
     }
 }
