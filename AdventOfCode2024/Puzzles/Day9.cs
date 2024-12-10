@@ -11,41 +11,66 @@ internal class Day9 : ISolver
 
         var arr = stream.ReadLine()!.Select(x => x - '0').ToArray();
 
-        var right = arr.Length % 2 != 0 ? arr.Length - 1 : arr.Length - 2;
+        var maxRight = arr.Length % 2 != 0 ? arr.Length - 1 : arr.Length - 2;
         var globalIndex = 0L;
         var sum = 0L;
 
-        right = GetNextRightIndex(right, arr);
+        var alreadyMoved = new bool[arr.Length];
 
         for (int left = 0; left < arr.Length; left++)
         {
-            for (int j = 0; j < arr[left] && left <= right; j++, globalIndex++)
+
+            if (left % 2 != 0)
             {
-                var currentInx = (left / 2);
-
-                if (left % 2 != 0)  // Empty spaces
+                var rightIndex = GetPossibleRightIndex(left, maxRight, arr, alreadyMoved);
+                if (rightIndex == -1)
                 {
-                    currentInx = (right / 2);
-
-                    arr[right]--;
-                    right = GetNextRightIndex(right, arr);
-
+                    globalIndex += arr[left];
+                    continue;
                 }
 
-                sum += globalIndex * currentInx;
+                for (int j = 0; j < arr[rightIndex]; j++, globalIndex++)
+                {
+                    arr[left]--;
+                    sum += globalIndex * (rightIndex / 2);
+                }
+
+                if (arr[left] > 0)
+                {
+                    left--; // Try insert more
+                }
             }
+            else
+            {
+                if (alreadyMoved[left])
+                {
+                    globalIndex += arr[left]; // Since it is moved this is now just a space
+                    continue;
+                }
+
+                for (int j = 0; j < arr[left]; j++, globalIndex++)
+                {
+                    sum += globalIndex * (left / 2);
+                }
+            }
+
+            alreadyMoved[left] = true;
         }
 
         return sum.ToString();
     }
 
-    private int GetNextRightIndex(int right, int[] arr)
+    private int GetPossibleRightIndex(int left, int maxRight, int[] arr, bool[] alreadyMoved)
     {
-        while (arr[right] == 0 && right > 1)
+        for (int i = maxRight; i >= 0; i -= 2)
         {
-            right -= 2;
+            if (!alreadyMoved[i] && arr[left] >= arr[i] && left != i)
+            {
+                alreadyMoved[i] = true;
+                return i;
+            }
         }
 
-        return right;
+        return -1;
     }
 }
