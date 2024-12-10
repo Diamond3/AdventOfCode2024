@@ -12,7 +12,7 @@ internal class Day10 : ISolver
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
 
         var map = new Dictionary<(int y, int x), int>();
-        var stack = new Stack<((int y, int x) pos, HashSet<(int x, int y)> visited, int score)>();
+        var stack = new Stack<((int y, int x) pos, HashSet<(int x, int y)> visited)>();
         var directions = new (int y, int x)[]
         {
             (0, 1),
@@ -22,7 +22,7 @@ internal class Day10 : ISolver
         };
 
         var y = 0;
-        var trailheads = new List<HashSet<(int, int)>>();
+        var sum = 0;
 
         while (stream.ReadLine() is string str)
         {
@@ -31,8 +31,7 @@ internal class Day10 : ISolver
                 map[(y, x)] = str[x] - '0';
                 if (map[(y, x)] == 0)
                 {
-                    stack.Push(((y, x), new HashSet<(int x, int y)>() { (y, x) }, trailheads.Count));
-                    trailheads.Add(new HashSet<(int, int)>());
+                    stack.Push(((y, x), new HashSet<(int x, int y)>() { (y, x) }));
                 }
             }
             y++;
@@ -40,10 +39,10 @@ internal class Day10 : ISolver
 
         while (stack.Count > 0)
         {
-            var (pos, visited, indx) = stack.Pop();
+            var (pos, visited) = stack.Pop();
             if (map[pos] == 9)
             {
-                trailheads[indx].Add(pos);
+                sum++;
                 continue;
             }
 
@@ -60,10 +59,10 @@ internal class Day10 : ISolver
                         newPos
                     };
 
-                    stack.Push((newPos, newVisited, indx));
+                    stack.Push((newPos, newVisited));
                 }
             }
         }
-        return trailheads.Sum(x => x.Count).ToString();
+        return sum.ToString();
     }
 }
