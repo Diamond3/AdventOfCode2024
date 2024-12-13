@@ -8,57 +8,50 @@ internal class Day13 : ISolver
     {
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
         var sum = 0L;
-        
+        var add = 10000000000000L;
+
         while (stream.ReadLine() is string line)
         {
             var a = line.Trim()
                 .Split(", ", StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => int.Parse(x.Split('+')[1]))
+                .Select(x => long.Parse(x.Split('+')[1]))
                 .ToArray();
 
             var b = stream.ReadLine()!.Trim()
                 .Split(", ", StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => int.Parse(x.Split('+')[1]))
+                .Select(x => long.Parse(x.Split('+')[1]))
                 .ToArray();
 
             var prize = stream.ReadLine()!.Trim()
                 .Split(", ", StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => int.Parse(x.Split('=')[1]))
+                .Select(x => long.Parse(x.Split('=')[1]) + add)
                 .ToArray();
 
             stream.ReadLine();
 
-            var stack = new Stack<((int x, int y), int aCount, int bCount)>();
-            stack.Push(((x: a[0], y: a[1]), 1, 0));
-            stack.Push(((x: b[0], y: b[1]), 0, 1));
+            var numerator = prize[0] * a[1] - prize[1] * a[0];
+            var denominator = a[1] * b[0] - a[0] * b[1];
+            var bCount = numerator / denominator;
 
-            var minPrice = int.MaxValue;
-            var currentMin = (a: -1, b: -1);
-
-            for (int i = 0; i < 100; i++)
+            if (bCount * denominator != numerator)
             {
-                for (int j = 0; j < 100; j++)
-                {
-                    var c = (x: i * a[0] + j * b[0], y: i * a[1] + j * b[1]);
-                    var price = i * 3 + j * 1;
-
-                    if (c.x == prize[0] && c.y == prize[1])
-                    {
-                        if (minPrice > price)
-                        {
-                            minPrice = price;
-                            currentMin = (a: i, b: j);
-                        }
-                        continue;
-                    }
-                }
+                continue;
             }
-            if (currentMin.a != -1 && currentMin.b != -1)
+
+            numerator = prize[0] - b[0] * bCount;
+            denominator = a[0];
+            var aCount = numerator / denominator;
+
+            if (aCount * denominator != numerator)
             {
-                sum += minPrice;
+                continue;
+            }
+
+            if (bCount > 0 && aCount > 0)
+            {
+                sum += aCount * 3 + bCount;
             }
         }
-
         return sum.ToString();
     }
 }
