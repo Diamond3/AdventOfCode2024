@@ -16,10 +16,10 @@ internal class Day12 : ISolver
         var stack = new Stack<(int y, int x)>();
         var directions = new (int y, int x)[]
         {
-            (0, 1),
-            (0, -1),
-            (1, 0),
-            (-1, 0),
+            (0, 1),     // 0
+            (0, -1),    // 1
+            (1, 0),     // 2
+            (-1, 0),    // 3
         };
 
         while (stream.ReadLine() is string line)
@@ -36,10 +36,18 @@ internal class Day12 : ISolver
             for (int j = 0; j < x; j++)
             {
                 var key = (i, j);
+
                 if (!visited.Contains(key))
                 {
+                    var sidesDict = new Dictionary<(int y, int x), HashSet<(int y, int x)>>()
+                    {
+                        { (0, 1), new HashSet<(int, int)>() },
+                        { (0, -1), new HashSet<(int, int)>() },
+                        { (1, 0), new HashSet<(int, int)>() },
+                        { (-1, 0), new HashSet<(int, int)>() },
+                    };
+
                     var area = 1;
-                    var perimeter = 0;
                     var id = map[key];
 
                     stack.Push(key);
@@ -48,12 +56,13 @@ internal class Day12 : ISolver
                     while (stack.Count > 0)
                     {
                         var pos = stack.Pop();
+                        var dirIndx = 0;
                         foreach (var dir in directions)
                         {
                             var nextPos = (y: pos.y + dir.y, x: pos.x + dir.x);
                             if (!map.TryGetValue(nextPos, out var sideId) || sideId != id)
                             {
-                                perimeter++;
+                                sidesDict[dir].Add(nextPos);
                             }
 
                             else if (!visited.Contains(nextPos) && map.TryGetValue(nextPos, out var nextId) && nextId == id)
@@ -62,14 +71,59 @@ internal class Day12 : ISolver
                                 visited.Add(nextPos);
                                 area++;
                             }
+                            dirIndx++;
                         }
                     }
-                    sum += area * perimeter;
+
+                    var sides = 0;
+                    foreach(var dir in directions)
+                    {
+                        var chekedSides = new HashSet<(int, int)>();
+                        var checkDir = GetCheckDirection(dir);
+
+                        foreach (var pos in sidesDict[dir])
+                        {
+                            if (chekedSides.Contains(pos))
+                            {
+                                continue;
+                            }
+
+                            sides++;
+
+                            AddSameSidePosToChekedSet(sidesDict[dir], chekedSides, checkDir, pos);
+                            AddSameSidePosToChekedSet(sidesDict[dir], chekedSides, (y: -checkDir.y, x: -checkDir.x), pos);
+                        }
+                    }
+
+                    sum += area * sides;
                 }
             }
         }
-       
 
         return sum.ToString();
+    }
+
+    private static void AddSameSidePosToChekedSet(HashSet<(int y, int x)> set, HashSet<(int, int)> chekedSides, (int y, int x) checkDir, (int y, int x) pos)
+    {
+        while (true)
+        {
+            pos = (y: pos.y + checkDir.y, x: pos.x + checkDir.x);
+            if (!set.Contains(pos))
+            {
+                break;
+            }
+            chekedSides.Add(pos);
+        }
+    }
+
+    /*
+        (0, 1) -> (1, 0),
+        (0, -1) -> (1, 0),
+        (1, 0) -> (0, 1),
+        (-1, 0) -> (0, 1)
+    */
+    private (int y, int x) GetCheckDirection((int y, int x) dir)
+    {
+        return (y: Math.Abs(dir.x), x: Math.Abs(dir.y));
     }
 }
