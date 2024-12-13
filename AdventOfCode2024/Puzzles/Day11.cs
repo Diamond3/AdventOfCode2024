@@ -10,7 +10,7 @@ internal class Day11 : ISolver
     {
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
 
-        var lastMemory = new Dictionary<(long val, int depth), long>();
+        var memory = new Dictionary<(long val, int depth), long>();
 
         var nums = stream.ReadLine()!.Split(' ').Select(long.Parse).ToArray();
         var sum = 0L;
@@ -29,25 +29,25 @@ internal class Day11 : ISolver
             var (num, prev, depth) = queue.Dequeue();
             var digitCount = (int)Math.Log10(num) + 1;
 
-            if (lastMemory.ContainsKey((num, depth)))
+            if (memory.ContainsKey((num, depth)))
             {
-                if (lastMemory.ContainsKey((prev, depth - 1)))
+                if (memory.ContainsKey((prev, depth - 1)))
                 {
-                    lastMemory[(num, depth)] += lastMemory[(prev, depth - 1)];
+                    memory[(num, depth)] += memory[(prev, depth - 1)];
                 }
                 else
                 {
-                    lastMemory[(num, depth)]++;
+                    memory[(num, depth)]++;
                 }
                 continue;
             }
 
-            if (!lastMemory.ContainsKey((num, depth)))
+            if (!memory.ContainsKey((num, depth)))
             {
-                lastMemory[(num, depth)] = 1;
-                if (lastMemory.ContainsKey((prev, depth - 1)))
+                memory[(num, depth)] = 1;
+                if (memory.ContainsKey((prev, depth - 1)))
                 {
-                    lastMemory[(num, depth)] = lastMemory[(prev, depth - 1)];
+                    memory[(num, depth)] = memory[(prev, depth - 1)];
                 }
             }
 
@@ -78,7 +78,7 @@ internal class Day11 : ISolver
 
         foreach (var num in finalDepth)
         {
-            sum += lastMemory[(num, DEPTH)];
+            sum += memory[(num, DEPTH)];
         }
 
         return sum.ToString();
