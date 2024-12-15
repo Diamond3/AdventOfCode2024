@@ -1,14 +1,9 @@
 ﻿using AdventOfCode2024.Utils;
-using System.Runtime.ExceptionServices;
 
 namespace AdventOfCode2024.Puzzles;
 
 internal class Day15 : ISolver
 {
-    private const int Height = 103;
-    private const int Width = 101;
-    private const int Seconds = 1000;
-
     public string Solve()
     {
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
@@ -59,8 +54,6 @@ internal class Day15 : ISolver
             map.Add(arr);
         }
 
-        PrintMap(pos, map);
-
         while (stream.ReadLine() is string line)
         {
             commands.AddRange(line);
@@ -73,8 +66,6 @@ internal class Day15 : ISolver
 
         }
 
-        PrintMap(pos, map);
-
         for (int y = 0; y < map.Count; y++)
         {
             for (int x = 0; x < map[0].Length; x++)
@@ -85,7 +76,6 @@ internal class Day15 : ISolver
                 }
             }
         }
-
 
         return sum.ToString();
     }
