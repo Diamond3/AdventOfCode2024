@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Security;
+using static AdventOfCode2024.Puzzles.Day16;
 
 namespace AdventOfCode2024.Puzzles;
 
@@ -9,11 +10,13 @@ internal class Day16 : ISolver
 {
     public class Node
     {
+        public (int y, int x) Pos;
+        public HashSet<Node> PossiblePrev = [];
         public Node Prev = null!;
-        public HashSet<(int, int)> Neighbors = [];
+        public HashSet<Node> Neighbors = [];
         public (int y, int x) CurrentDirection;
         public long Distance;
-        public (int y, int x) Pos;
+        public int Tiles = 0;
 
         public Node((int y, int x) pos)
         {
@@ -23,11 +26,18 @@ internal class Day16 : ISolver
         }
     }
 
+    private (int y, int x)[] directions =
+    [
+        (0, 1),
+        (0, -1),
+        (-1, 0),
+        (1, 0),
+    ];
+
     public string Solve()
     {
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
         var charMap = new Dictionary<(int y, int x), char>();
-        var map = new Dictionary<(int y, int x), Node>();
 
         var y = 0;
         var start = (0, 0);
@@ -58,56 +68,104 @@ internal class Day16 : ISolver
             }
             y++;
         }
-        mapHeight = y;
 
+        mapHeight = y;
+        var map = new Dictionary<((int y, int x) pos, (int y, int x) dir), Node>();
         CreateGraph(start, charMap, map);
 
         var visited = new HashSet<Node>();
         var queue = new PriorityQueue<Node, long>();
 
-        queue.Enqueue(map[start], map[start].Distance);
-        map[start].Distance = 0;
-        map[start].CurrentDirection = (0, 1);
+        queue.Enqueue(map[(start,(0, -1))], map[(start, (0, -1))].Distance);
+        queue.Enqueue(map[(start,(-1, 0))], map[(start, (-1, 0))].Distance);
 
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();
 
-            foreach (var nPos in node.Neighbors)
+            foreach (var n in node.Neighbors)
             {
-                var n = map[nPos];
-                var nodeDir = GetDirToNode(node.Pos, n.Pos);
-                var cost = nodeDir == node.CurrentDirection ? 0 : 1000;
+                var cost = n.CurrentDirection == node.CurrentDirection ? 0 : 1000;
                 var dist = node.Distance + GetDistance(node.Pos, n.Pos) + cost;
-                if (dist <= n.Distance)
+
+                if (dist < n.Distance)
                 {
-                    n.CurrentDirection = nodeDir;
+                    n.PossiblePrev.Clear();
+                    n.PossiblePrev.Add(node);
                     n.Distance = dist;
-                    n.Prev = node;
+                    queue.Enqueue(n, dist);
+                }
+                else if (dist == n.Distance)
+                {
+                    n.PossiblePrev.Add(node);
+                    queue.Enqueue(n, dist);
                 }
 
-                if (visited.Add(n))
+            }
+        }
+
+        var min = long.MaxValue;
+        var dirIndx = new List<int>();
+
+        for (var i = 0; i < 4; i++)
+        {
+            if (map.TryGetValue((end, directions[i]), out var val))
+            {
+                if (val.Distance < min)
                 {
-                    queue.Enqueue(n, dist);
+                    min = val.Distance;
+                    dirIndx.Clear();
+                    dirIndx.Add(i);
+                }
+                else if (val.Distance == min)
+                {
+                    dirIndx.Add(i);
                 }
             }
         }
 
-        //PrintMap(charMap, map, end, mapWidth, mapHeight);
+        //Console.WriteLine(min);
 
-        return map[end].Distance.ToString();
+        var tiles = new HashSet<(int, int)>()
+        {
+            start
+        };
+
+        foreach (var i in dirIndx)
+        {
+            BuildPath(map[(end, directions[i])], tiles);
+        }
+
+        //PrintMap(charMap, map, end, mapWidth, mapHeight, tiles);
+
+        return tiles.Count.ToString();
     }
 
-    private void PrintMap(Dictionary<(int y, int x), char> charMap, Dictionary<(int y, int x), Node> map, (int, int) end, int mapWidth, int mapHeight)
+    private void BuildPath(Node current, HashSet<(int, int)> path)
     {
-        var path = new HashSet<(int, int)>() { end };
-        var currentNode = map[end];
-
-        while (currentNode != null)
+        if (current != null)
         {
-            path.Add(currentNode.Pos);
-            //Console.WriteLine(currentNode.Distance);
-            currentNode = currentNode.Prev;
+            foreach (var node in current.PossiblePrev)
+            {
+                var (y, x) = GetDirToNode(current.Pos, node.Pos);
+                var temp = current.Pos;
+                while (temp != node.Pos)
+                {
+                    path.Add(temp);
+                    temp = (temp.y + y, temp.x + x);
+                }
+
+                //Console.WriteLine($"{node.Pos} -> {node.PossiblePrev.Count}");
+                BuildPath(node, path);
+            }
+        }
+    }
+
+    private void PrintMap(Dictionary<(int y, int x), char> charMap, Dictionary<(int y, int x), Node> map, (int, int) end, int mapWidth, int mapHeight, HashSet<(int, int)> path)
+    {
+        foreach (var node in map.Values)
+        {
+            Console.WriteLine($"{node.Pos} -> {node.PossiblePrev.Count}");
         }
 
         for (int y = 0; y < mapHeight; y++)
@@ -137,49 +195,61 @@ internal class Day16 : ISolver
         return Math.Abs(nPos.y - pos.y) + Math.Abs(nPos.x - pos.x);
     }
 
-    private void CreateGraph((int, int) start, Dictionary<(int y, int x), char> charMap, Dictionary<(int y, int x), Node> map)
+    private void CreateGraph((int, int) start, Dictionary<(int y, int x), char> charMap, Dictionary<((int y, int x) pos, (int y, int x) dir), Node> map)
     {
-        var visited = new HashSet<(int, int)>();
-        var stack = new Stack<(int y, int x)>();
-        stack.Push(start);
+        var visited = new HashSet<Node>();
+        var stack = new Stack<Node>();
 
-        map[start] = new Node(start)
+        var s1 = new Node(start)
         {
+            CurrentDirection = (0, -1),
             Distance = 0
         };
 
+        var s2 = new Node(start)
+        {
+            CurrentDirection = (-1, 0),
+            Distance = 1000
+        };
+
+        map[(s1.Pos, s1.CurrentDirection)] = s1;
+        map[(s2.Pos, s2.CurrentDirection)] = s2;
+
+        stack.Push(s1);
+        stack.Push(s2);
+
         while (stack.Count > 0)
         {
-            var pos = stack.Pop();
-            foreach (var n in GetNeighbors(pos, charMap))
+            var parent = stack.Pop();
+            foreach (var n in GetNeighbors(parent.Pos, charMap))
             {
-                if (!map.ContainsKey(n))
+                var dir = GetDirToNode(parent.Pos, n);
+
+                if (!map.ContainsKey((n, dir)))
                 {
-                    map[n] = new Node(n);
+                    map[(n, dir)] = new Node(n)
+                    {
+                        CurrentDirection = dir
+                    };
                 }
 
-                if (!visited.Contains(n))
+                var node = map[(n, dir)];
+
+                if (!visited.Contains(node))
                 {
-                    stack.Push(n);
+                    stack.Push(node);
                 }
 
-                map[pos].Neighbors.Add(n);
+                parent.Neighbors.Add(node);
             }
 
-            visited.Add(pos);
+            visited.Add(parent);
         }
     }
 
     private List<(int y, int x)> GetNeighbors((int y, int x) pos, Dictionary<(int y, int x), char> map)
     {
         var list = new List<(int y, int x)>();
-        var directions = new (int y, int x)[]
-        {
-            (0, 1),
-            (0, -1),
-            (-1, 0),
-            (1, 0),
-        };
 
         for (int i = 0; i < 4; i++)
         {
@@ -217,14 +287,6 @@ internal class Day16 : ISolver
 
     private bool NoIntersection((int y, int x) dir, Dictionary<(int y, int x), char> map, (int y, int x) key)
     {
-        var directions = new (int y, int x)[]
-        {
-                    (0, 1),
-                    (0, -1),
-                    (-1, 0),
-                    (1, 0),
-        };
-
         for (int i = 0; i < 4; i++)
         {
             if ((-dir.y, -dir.x) == directions[i]
