@@ -5,33 +5,6 @@ namespace AdventOfCode2024.Puzzles;
 
 internal class Day17 : ISolver
 {
-    public class Operation
-    {
-        public char Ans;
-        public char Left;
-        public Op Op;
-        public char Right;
-        public bool IsOutput = false;
-        public bool Is2Pow = false;
-        public bool IsJump = false;
-
-        public Operation(char ans, char left, Op op, char right)
-        {
-            Ans = ans;
-            Left = left;
-            Op = op;
-            Right = right;
-        }
-        public Operation()
-        {
-
-        }
-    }
-
-    public enum Op
-    {
-        Div, Mod, Xor
-    }
     public string Solve()
     {
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
