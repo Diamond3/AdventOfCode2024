@@ -28,45 +28,60 @@ internal class Day18 : ISolver
             dist[y] = distArr;
         }
 
-        for (int i = 0; i < 1024; i++)
+        while (stream.ReadLine() is string line)
         {
-            var split = stream.ReadLine()!.Split(',').Select(int.Parse).ToArray();
+            var split = line.Split(',').Select(int.Parse).ToArray();
             map[split[1]][split[0]] = '#';
-        }
 
-        var queue = new PriorityQueue<(int y, int x), int>();
-        var visited = new HashSet<(int, int)>();
+            var queue = new PriorityQueue<(int y, int x), int>();
+            var visited = new HashSet<(int, int)>();
 
-        dist[0][0] = 0;
-        queue.Enqueue((0, 0), 0);
-
-        while (queue.Count > 0)
-        {
-            var pos = queue.Dequeue();
-
-            foreach (var n in GetNeighbors(pos, map))
+            for (int y = 0; y < MapSize; y++)
             {
-                var cost = 1;
-                var d = dist[pos.y][pos.x] + cost;
-
-                if (d < dist[n.y][n.x])
+                var distArr = new int[MapSize];
+                for (int x = 0; x < MapSize; x++)
                 {
-                    dist[n.y][n.x] = d;
-                    queue.Enqueue(n, dist[n.y][n.x]);
+                    distArr[x] = int.MaxValue;
                 }
+                dist[y] = distArr;
             }
 
-            visited.Add(pos);
+            dist[0][0] = 0;
+            queue.Enqueue((0, 0), 0);
+
+            while (queue.Count > 0)
+            {
+                var pos = queue.Dequeue();
+
+                foreach (var n in GetNeighbors(pos, map))
+                {
+                    var cost = 1;
+                    var d = dist[pos.y][pos.x] + cost;
+
+                    if (d < dist[n.y][n.x])
+                    {
+                        dist[n.y][n.x] = d;
+                        queue.Enqueue(n, dist[n.y][n.x]);
+                    }
+                }
+
+                visited.Add(pos);
+            }
+
+            if (dist[MapSize - 1][MapSize - 1] == int.MaxValue)
+            {
+                return $"{split[0]},{split[1]}";
+            }
         }
 
-        for (int y = 0; y < MapSize; y++)
+        /*for (int y = 0; y < MapSize; y++)
         {
             for (int x = 0; x < MapSize; x++)
             {
                 Console.Write(map[y][x] + " ");
             }
             Console.WriteLine();
-        }
+        }*/
 
         return dist[MapSize - 1][MapSize - 1].ToString();
     }
