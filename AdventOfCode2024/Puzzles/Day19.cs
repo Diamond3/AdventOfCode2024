@@ -9,7 +9,7 @@ internal class Day19 : ISolver
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
 
         var dict = new Dictionary<char, Dictionary<int, HashSet<string>>>();
-        var count = 0;
+        var count = 0L;
 
         while (stream.ReadLine() is string line && !string.IsNullOrEmpty(line))
         {
@@ -33,33 +33,50 @@ internal class Day19 : ISolver
 
         while (stream.ReadLine() is string line)
         {
-            var stack = new Stack<int>();
+            var memory = new Dictionary<(int ind, int depth), long>();
+            var queue = new Queue<(int ind, int depth, int prevInd)>();
+            var lastDepth = new HashSet<(int, int)>();
 
-            stack.Push(0);
+            queue.Enqueue((0, 0, -1));
 
-            var found = false;
-
-            while (stack.Count > 0)
+            while (queue.Count > 0)
             {
-                var i = stack.Pop();
+                var (ind, depth, prevInd) = queue.Dequeue();
+                var key = (ind, depth);
+                var prevKey = (prevInd, depth - 1);
 
-                if (i >= line.Length)
+                if (memory.ContainsKey(key))
                 {
-                    Console.WriteLine(line);
-                    found = true;
-                    break;
+                    if (memory.ContainsKey(prevKey))
+                    {
+                        memory[key] += memory[prevKey];
+                    }
+                    else
+                    {
+                        memory[key]++;
+                    }
+                    continue;
                 }
 
-                foreach (var index in NextIndexes(i, line, dict))
+                memory[key] = 1;
+                if (memory.ContainsKey(prevKey))
                 {
-                    stack.Push(index);
+                    memory[key] = memory[prevKey];
+                }
+
+                if (ind >= line.Length)
+                {
+                    lastDepth.Add(key);
+                    continue;
+                }
+
+                foreach (var index in NextIndexes(ind, line, dict))
+                {
+                    queue.Enqueue((index, depth + 1, ind));
                 }
             }
 
-            if (found)
-            {
-                count++;
-            }
+            count += lastDepth.Select(x => memory[x]).Sum();
         }
 
         return count.ToString();
