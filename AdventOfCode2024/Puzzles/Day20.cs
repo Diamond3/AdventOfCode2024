@@ -1,23 +1,27 @@
 ﻿using AdventOfCode2024.Utils;
 using System.Diagnostics;
+using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AdventOfCode2024.Puzzles;
 
 internal class Day20 : ISolver
 {
+    private (int y, int x)[] Directions =
+        [
+            (0, 1),
+            (0, -1),
+            (-1, 0),
+            (1, 0),
+        ];
+
     public string Solve()
     {
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
 
         var map = new List<char[]>();
-        var dist = new List<int[]>();
 
-        var h = new List<int[]>();
-        var prev = new List<(int y, int x)[]>();
-        var walls = new HashSet<(int, int)>();
-        var empty = new HashSet<(int, int)>();
-
-        var jumpPos = new Dictionary<(int, int), HashSet<(int, int)>>();
+        var path = new HashSet<(int, int)>();
 
         var start = (y: 0, x: 0);
         var end = (y: 0, x: 0);
@@ -27,91 +31,126 @@ internal class Day20 : ISolver
         var y = 0;
         while (stream.ReadLine() is string line)
         {
-            var distArr = new int[line.Length];
-            var rowArr = new char[line.Length];
             for (int x = 0; x < line.Length; x++)
             {
-                rowArr[x] = line[x];
-                if (rowArr[x] == 'S')
+                if (line[x] == 'S')
                 {
                     start = (y, x);
-                    rowArr[x] = '.';
                 }
-                if (rowArr[x] == 'E')
+
+                if (line[x] == 'E')
                 {
                     end = (y, x);
-                    rowArr[x] = '.';
                 }
-                if (x != 0 && x != line.Length - 1 && y != 0 && rowArr[x] == '#')
+
+                if (line[x] == 'E' || line[x] == 'S' || line[x] == '.')
                 {
-                    walls.Add((y, x));
+                    path.Add((y, x));
                 }
-                if (rowArr[x] == '.')
-                {
-                    empty.Add((y, x));
-                }
-                distArr[x] = int.MaxValue;
             }
-            map.Add(rowArr);
-            dist.Add(distArr);
             y++;
         }
-
-        for (y = 0; y < map.Count; y++)
-        {
-            for (int x = 0; x < map[0].Length; x++)
-            {
-                var nextPos = GetJumpPosAfter2s((y, x), map);
-                if (nextPos.Count != 0)
-                {
-                    jumpPos[(y, x)] = new HashSet<(int, int)>(nextPos);
-                }
-            }
-        }
-
-        SetHeuristic(map, h, end);
-
-        st.Start();
-
-        var shortestTime = ShortestPath(map, dist, h, start, end, int.MaxValue, [(-1, -1), (-1, -1)]);
 
         var cheatCount = 0;
         var cheatDict = new Dictionary<int, int>();
         var cheked = new HashSet<((int, int), (int, int))>();
 
-        PrintMap(map);
-        // Add start positions to list and pass them to the path finding
+        var mainPathLen = GetPathLen(path, start, end);
 
-        foreach (var startPos in jumpPos.Keys)
+        var pos = (y: start.y + 1, x: start.x);
+        var visited = new HashSet<(int, int)>();
+
+        while (true)
         {
-            foreach (var endPos in jumpPos[startPos])
+            for (int i = 0; i < 4; i++)
             {
-                var a = ShortestPath(map, dist, h, start, end, shortestTime, [startPos, endPos]);
+                var newPos = (pos.y + Directions[i].y, pos.x + Directions[i].x);
 
-                if (a < shortestTime && shortestTime - a >= 100)
+                if (!visited.Contains(newPos) && path.Contains(newPos))
                 {
-                    if (!cheatDict.ContainsKey(shortestTime - a))
+                    pos = newPos;
+                    visited.Add(newPos);
+
+                    var stack = new Stack<((int y, int x) current, HashSet<(int, int)> visited)>();
+                    for (int k = 0; k < 4; k++)
                     {
-                        cheatDict[shortestTime - a] = 0;
+                        var nextPos = (pos.y + Directions[k].y, pos.x + Directions[k].x);
+                        newPos = (pos.y + Directions[k].y * 2, pos.x + Directions[k].x * 2);
+
+                        if (!path.Contains(nextPos) && !visited.Contains(newPos) && path.Contains(newPos))
+                        {
+                            stack.Push((newPos, new HashSet<(int, int)>(visited) { nextPos, newPos }));
+                        }
                     }
-                    cheatDict[shortestTime - a]++;
-                    cheatCount++;
+
+                    while (stack.Count > 0)
+                    {
+                        var (current, visitedSet) = stack.Pop();
+
+                        var length = visitedSet.Count - 1;
+                        if (current == end && length < mainPathLen)
+                        {
+                            var key = mainPathLen - length;
+
+                            if (!cheatDict.ContainsKey(key))
+                            {
+                                cheatDict[key] = 0;
+                            }
+
+                            cheatDict[key]++;
+                            cheatCount++;
+                        }
+
+                        for (int l = 0; l < 4; l++)
+                        {
+                            newPos = (current.y + Directions[l].y, current.x + Directions[l].x);
+
+                            if (!visitedSet.Contains(newPos) && path.Contains(newPos))
+                            {
+                                stack.Push((newPos, new HashSet<(int, int)>(visitedSet) { newPos }));
+                            }
+                        }
+                    }
+
+                    break;
                 }
+            }
+
+            if (visited.Contains(end))
+            {
+                break;
             }
         }
 
-        //Console.WriteLine(st.ElapsedMilliseconds);
-
-        /*for (int y = 0; y < MapSize; y++)
-        {
-            for (int x = 0; x < MapSize; x++)
-            {
-                Console.Write(map[y][x] + " ");
-            }
-            Console.WriteLine();
-        }*/
-
         return cheatCount.ToString();
+    }
+
+    private int GetPathLen(HashSet<(int, int)> path, (int y, int x) start, (int y, int x) end)
+    {
+        var pos = start;
+        var prev = start;
+        var len = 0;
+
+        while (true)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                var newPos = (pos.y + Directions[i].y, pos.x + Directions[i].x);
+
+                if (prev != newPos && path.Contains(newPos))
+                {
+                    prev = pos;
+                    pos = newPos;
+                    len++;
+                    break;
+                }
+            }
+
+            if (pos == end)
+            {
+                return len;
+            }
+        }
     }
 
     private void SetHeuristic(List<char[]> map, List<int[]> h, (int y, int x) end)
@@ -127,13 +166,20 @@ internal class Day20 : ISolver
         }
     }
 
-    private void PrintMap(List<char[]> map)
+    private void PrintMap(HashSet<(int, int)> map, HashSet<(int, int)> visited)
     {
-        for (int y = 0; y < map.Count; y++)
+        for (int y = 0; y < 16; y++)
         {
-            for (int x = 0; x < map[0].Length; x++)
+            for (int x = 0; x < 16; x++)
             {
-                Console.Write(map[y][x]);
+                if (visited.Contains((y, x)) && !map.Contains((y, x)))
+                {
+                    Console.Write('x');
+                }
+                else
+                {
+                    Console.Write(map.Contains((y, x)) ? '.' : '#');
+                }
             }
             Console.WriteLine();
         }
@@ -219,7 +265,7 @@ internal class Day20 : ISolver
         return list;
     }
 
-    private List<(int y, int x)> GetJumpPosAfter2s((int y, int x) pos, List<char[]> map)
+    private List<(int y, int x)> GetNext((int y, int x) pos, List<char[]> map)
     {
         var list = new List<(int y, int x)>();
         var directions = new (int y, int x)[4]
@@ -235,15 +281,9 @@ internal class Day20 : ISolver
             var y = pos.y + directions[i].y;
             var x = pos.x + directions[i].x;
 
-            if (IsLegal(map, y, x) && map[y][x] == '#')
+            if (IsLegal(map, y, x))
             {
-                var nextY = y + directions[i].y;
-                var nextX = x + directions[i].x;
-
-                if (IsLegal(map, nextY, nextX) && map[nextY][nextX] != '#')
-                {
-                    list.Add((nextY, nextX));
-                }
+                list.Add((y, x));
             }
         }
 
