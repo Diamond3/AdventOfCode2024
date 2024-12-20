@@ -17,6 +17,8 @@ internal class Day20 : ISolver
         var walls = new HashSet<(int, int)>();
         var empty = new HashSet<(int, int)>();
 
+        var jumpPos = new Dictionary<(int, int), HashSet<(int, int)>>();
+
         var start = (y: 0, x: 0);
         var end = (y: 0, x: 0);
 
@@ -55,38 +57,45 @@ internal class Day20 : ISolver
             y++;
         }
 
+        for (y = 0; y < map.Count; y++)
+        {
+            for (int x = 0; x < map[0].Length; x++)
+            {
+                var nextPos = GetJumpPosAfter2s((y, x), map);
+                if (nextPos.Count != 0)
+                {
+                    jumpPos[(y, x)] = new HashSet<(int, int)>(nextPos);
+                }
+            }
+        }
+
         SetHeuristic(map, h, end);
 
         st.Start();
 
-        var shortestTime = ShortestPath(map, dist, h, start, end, int.MaxValue);
+        var shortestTime = ShortestPath(map, dist, h, start, end, int.MaxValue, [(-1, -1), (-1, -1)]);
+
         var cheatCount = 0;
         var cheatDict = new Dictionary<int, int>();
         var cheked = new HashSet<((int, int), (int, int))>();
 
-        // PrintMap(map);
+        PrintMap(map);
         // Add start positions to list and pass them to the path finding
-        foreach (var wall in walls)
-        {
-            foreach (var n in GetNeighbors(wall))
-            {
-                if ((empty.Contains(n) || (walls.Contains(n)) && !cheked.Contains((wall, n)) && !cheked.Contains((n, wall))))
-                {
-                    cheked.Add((n, wall));
-                    RemoveWallMap(map, wall, n);
-                    PrintMap(map);
-                    var a = ShortestPath(map, dist, h, start, end, shortestTime);
 
-                    if (a < shortestTime)
+        foreach (var startPos in jumpPos.Keys)
+        {
+            foreach (var endPos in jumpPos[startPos])
+            {
+                var a = ShortestPath(map, dist, h, start, end, shortestTime, [startPos, endPos]);
+
+                if (a < shortestTime && shortestTime - a >= 100)
+                {
+                    if (!cheatDict.ContainsKey(shortestTime - a))
                     {
-                        if (!cheatDict.ContainsKey(shortestTime - a))
-                        {
-                            cheatDict[shortestTime - a] = 0;
-                        }
-                        cheatDict[shortestTime - a]++;
-                        cheatCount++;
+                        cheatDict[shortestTime - a] = 0;
                     }
-                    ResetMap(map, wall, n, walls);
+                    cheatDict[shortestTime - a]++;
+                    cheatCount++;
                 }
             }
         }
@@ -131,7 +140,7 @@ internal class Day20 : ISolver
         Console.WriteLine();
     }
 
-    private int ShortestPath(List<char[]> map, List<int[]> dist, List<int[]> h, (int y, int x) start, (int y, int x) end, int shortestTime)
+    private int ShortestPath(List<char[]> map, List<int[]> dist, List<int[]> h, (int y, int x) start, (int y, int x) end, int shortestTime, (int y, int x)[] jump)
     {
         ResetDist(dist);
 
@@ -145,9 +154,15 @@ internal class Day20 : ISolver
         {
             var pos = queue.Dequeue();
 
-            foreach (var n in GetNeighbors(pos, map))
+            foreach (var nTemp in GetNeighbors(pos, map))
             {
+                var n = nTemp;
                 var cost = 1;
+                if (jump[0] == n)
+                {
+                    n = jump[1];
+                    cost += 2;
+                }
                 var newDist = dist[pos.y][pos.x] + cost;
 
                 if (newDist < shortestTime && newDist < dist[n.y][n.x])
@@ -179,18 +194,6 @@ internal class Day20 : ISolver
         }
     }
 
-    private void ResetMap(List<char[]> map, (int y, int x) p1, (int y, int x) p2, HashSet<(int, int)> walls)
-    {
-        map[p1.y][p1.x] = walls.Contains(p1) ? '#' : '.';
-        map[p2.y][p2.x] = walls.Contains(p2) ? '#' : '.';
-    }
-
-    private void RemoveWallMap(List<char[]> map, (int y, int x) p1, (int y, int x) p2)
-    {
-        map[p1.y][p1.x] = '1';
-        map[p2.y][p2.x] = '2';
-    }
-
     private List<(int y, int x)> GetNeighbors((int y, int x) pos, List<char[]> map)
     {
         var list = new List<(int y, int x)>();
@@ -216,14 +219,39 @@ internal class Day20 : ISolver
         return list;
     }
 
-    private (int y, int x)[] GetNeighbors((int y, int x) pos)
+    private List<(int y, int x)> GetJumpPosAfter2s((int y, int x) pos, List<char[]> map)
     {
-        return
-        [
-            (pos.y, pos.x + 1),
-            (pos.y, pos.x - 1),
-            (pos.y - 1, pos.x),
-            (pos.y + 1, pos.x),
-        ];
+        var list = new List<(int y, int x)>();
+        var directions = new (int y, int x)[4]
+        {
+            (0, 1),
+            (0, -1),
+            (-1, 0),
+            (1, 0),
+        };
+
+        for (int i = 0; i < 4; i++)
+        {
+            var y = pos.y + directions[i].y;
+            var x = pos.x + directions[i].x;
+
+            if (IsLegal(map, y, x) && map[y][x] == '#')
+            {
+                var nextY = y + directions[i].y;
+                var nextX = x + directions[i].x;
+
+                if (IsLegal(map, nextY, nextX) && map[nextY][nextX] != '#')
+                {
+                    list.Add((nextY, nextX));
+                }
+            }
+        }
+
+        return list;
+    }
+
+    private static bool IsLegal(List<char[]> map, int y, int x)
+    {
+        return x >= 0 && x < map[0].Length && y >= 0 && y < map.Count;
     }
 }
