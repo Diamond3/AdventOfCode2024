@@ -5,6 +5,9 @@ namespace AdventOfCode2024.Puzzles;
 
 internal class Day20 : ISolver
 {
+    private int Height = 0;
+    private int Width = 0;
+
     private (int y, int x)[] Directions =
         [
             (0, 1),
@@ -29,6 +32,9 @@ internal class Day20 : ISolver
         var y = 0;
         while (stream.ReadLine() is string line)
         {
+            Width = line.Length;
+            var charArr = new char[Width];
+
             for (int x = 0; x < line.Length; x++)
             {
                 if (line[x] == 'S')
@@ -45,12 +51,19 @@ internal class Day20 : ISolver
                 {
                     path.Add((y, x));
                 }
+
+                charArr[x] = line[x];
             }
+
+            map.Add(charArr);
             y++;
         }
+        Height = y;
 
         var pos = start;
         var visited = new HashSet<(int, int)>();
+        var possibleJumps = new Dictionary<(int, int), List<((int y, int x), int dist)>>();
+        var alreadyCheked = new HashSet<(int, int)>();
         var dict = new Dictionary<(int y, int x), int>()
         {
             { start, 0 }
@@ -58,6 +71,7 @@ internal class Day20 : ISolver
 
         while (pos != end)
         {
+            possibleJumps[pos] = PosInDist(pos, 20, path);
             for (int i = 0; i < 4; i++)
             {
                 var nextPos = (y: pos.y + Directions[i].y, x: pos.x + Directions[i].x);
@@ -81,12 +95,12 @@ internal class Day20 : ISolver
 
         while (pos != end)
         {
-            foreach (var p in PosInRadius(pos, 2, path))
+            foreach (var (p, dist) in possibleJumps[pos])
             {
                 if (!visited.Contains(p))
                 {
-                    var newLen = visited.Count + (len - dict[p]) + 2;
-                    if (newLen < len && newLen <= len - 100)
+                    var newLen = visited.Count + (len - dict[p]) + dist;
+                    if ((len - newLen) >= 100)
                     {
                         if (!cheatDict.ContainsKey(len - newLen))
                         {
@@ -112,36 +126,39 @@ internal class Day20 : ISolver
             }
         }
 
-
         return cheatCount.ToString();
     }
 
-    private List<(int y, int x)> PosInRadius((int y, int x) center, int radius, HashSet<(int y, int x)> path)
+    private List<((int y, int x), int dist)> PosInDist((int y, int x) center, int radius, HashSet<(int y, int x)> path)
     {
-        var list = new List<(int y, int x)>();
+        var list = new List<((int y, int x), int dist)>();
         foreach (var pos in path)
         {
-            if ((int)Math.Pow(pos.y - center.y, 2) == radius * radius - (int)Math.Pow(pos.x - center.x, 2))
+            var dist = Math.Abs(pos.y - center.y) + Math.Abs(pos.x - center.x);
+            if (radius >= dist)
             {
-                list.Add(pos);
+                if (dist > 0)
+                {
+                    list.Add((pos, dist));
+                }
             }
         }
         return list;
     }
 
-    private void PrintMap(HashSet<(int, int)> map, HashSet<(int, int)> visited)
+    private void PrintMap(HashSet<(int, int)> path, HashSet<(int, int)> visited)
     {
-        for (int y = 0; y < 16; y++)
+        for (int y = 0; y < Height; y++)
         {
-            for (int x = 0; x < 16; x++)
+            for (int x = 0; x < Width; x++)
             {
-                if (visited.Contains((y, x)) && !map.Contains((y, x)))
+                if (visited.Contains((y, x)))
                 {
-                    Console.Write('x');
+                    Console.Write("x ");
                 }
                 else
                 {
-                    Console.Write(map.Contains((y, x)) ? '.' : '#');
+                    Console.Write(path.Contains((y, x)) ? ". " : "# ");
                 }
             }
             Console.WriteLine();
