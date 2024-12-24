@@ -1,6 +1,4 @@
 ﻿using AdventOfCode2024.Utils;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace AdventOfCode2024.Puzzles;
 
