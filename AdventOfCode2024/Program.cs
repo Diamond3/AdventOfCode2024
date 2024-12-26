@@ -1,4 +1,5 @@
-﻿using AdventOfCode2024.Utils;
+﻿using AdventOfCode2024.Puzzles;
+using AdventOfCode2024.Utils;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
 
@@ -55,7 +56,7 @@ public class Program
                 Console.WriteLine("Input file created!");
             }
 
-            //latestSolver = typeof(Day1);
+            latestSolver = typeof(Day23);
 
             Console.WriteLine($"Executing {latestSolver}");
 

@@ -8,7 +8,6 @@ internal class Day23 : ISolver
     {
         using var stream = new StreamReader($"Inputs/{GetType().Name}.txt");
         var graph = new Dictionary<string, List<string>>();
-        var tNodes = new HashSet<string>();
 
         while (stream.ReadLine() is string line)
         {
@@ -19,46 +18,36 @@ internal class Day23 : ISolver
 
                 graph.TryAdd(right, []);
                 graph[right].Add(left);
-
-                if (left[0] == 't')
-                {
-                    tNodes.Add(left);
-                }
-                else if (right[0] == 't')
-                {
-                    tNodes.Add(right);
-                }
             }
         }
 
-        var existingSet = new HashSet<string>();
-        var count = 0;
+        var longestSeq = new List<string>();
+        BronKerbosch(graph, [], graph.Keys.ToList(), [], longestSeq);
 
-        foreach (var tNode in tNodes)
+        return string.Join(",", longestSeq.OrderBy(x => x));
+    }
+
+    private void BronKerbosch(Dictionary<string, List<string>> graph, List<string> current, List<string> candidates, List<string> exclued, List<string> longestSeq)
+    {
+        if (candidates.Count == 0 && exclued.Count == 0)
         {
-            var path = new Dictionary<string, List<string>>();
-            var nextNodes = new HashSet<string>();
-            var depth1 = graph[tNode];
-
-            foreach (var node in depth1)
+            if (longestSeq.Count < current.Count)
             {
-                var depth2 = graph[node];
-                foreach (var node2 in depth2)
-                {
-                    if (graph[node2].Contains(tNode))
-                    {
-                        var key  = string.Join(',', [.. new[] { tNode, node, node2 }.OrderBy(x => x)]);
-
-                        if (existingSet.Add(key))
-                        {
-                            //Console.WriteLine(key);
-                            count++;
-                        }
-                    }
-                }
+                longestSeq.Clear();
+                longestSeq.AddRange(current);
             }
+            return;
         }
 
-        return count.ToString();
+        var pivot = candidates.Union(exclued).OrderBy(x => graph[x].Count).Last();
+        foreach (var candidate in candidates.Except(graph[pivot]))
+        {
+            BronKerbosch(graph, new List<string>(current) { candidate },
+                candidates.Intersect(graph[candidate]).ToList(),
+                exclued.Intersect(graph[candidate]).ToList(),
+                longestSeq);
+
+            exclued.Add(candidate);
+        }
     }
 }
